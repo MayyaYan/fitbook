@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FitBook — прототип v0.3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page: #dfe4ea;
+    --ink: #17202b;
+    --muted: #6b7684;
+    --line: #e3e7ec;
+    --surface: #ffffff;
+    --soft: #f3f5f8;
+    --accent: #1f6f5c;
+    --accent-soft: #e2f1ec;
+    --warn: #c0392b;
+    --font: "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  :root { --note-ink: #33404f; --note-line: #9aa5b1; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page: #151a21; --note-ink: #c9d1da; --note-line: #56606b; }
+  }
+  :root[data-theme="dark"] { --page: #151a21; --note-ink: #c9d1da; --note-line: #56606b; }
+  :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--page);
+    font-family: var(--font);
+    color: var(--ink);
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    flex-wrap: wrap;
+  }
+  .note {
+    max-width: 280px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--note-ink);
+  }
+  .note h1 { font-size: 20px; margin: 0 0 8px; }
+  .note dl { margin: 12px 0 0; }
+  .note dt { font-weight: 700; margin-top: 10px; }
+  .note dd { margin: 2px 0 0; }
+  .note .reset {
+    margin-top: 16px; font: inherit; font-size: 13px; padding: 8px 12px;
+    border: 1px solid var(--note-line); background: transparent; color: var(--note-ink); border-radius: 8px; cursor: pointer;
+  }
+  .phone {
+    width: 375px; height: 740px; max-width: 100%;
+    background: var(--surface);
+    border: 10px solid #1d242d;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex; flex-direction: column;
+    box-shadow: 0 30px 60px -20px rgba(23,32,43,.45);
+  }
+  .status { height: 34px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 22px; font-size: 13px; font-weight: 700; }
+  .screen { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .screen.active { display: flex; }
+  .content { flex: 1; overflow-y: auto; padding: 8px 20px 20px; }
+  header.bar { display: flex; align-items: center; gap: 10px; padding: 8px 20px 12px; flex: none; }
+  header.bar h2 { font-size: 22px; margin: 0; font-weight: 800; flex: 1; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; font-size: 18px; color: var(--ink); }
+  .text-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn { width: 100%; padding: 15px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .btn.secondary { background: var(--soft); color: var(--ink); }
+  .btn:disabled { background: #c9ced5; color: #7b8591; cursor: not-allowed; }
+  label.field { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  input.inp { width: 100%; padding: 14px; border: 1.5px solid var(--line); border-radius: 12px; font: inherit; font-size: 17px; }
+  input.inp:focus { outline: none; border-color: var(--accent); }
+  .err { color: var(--warn); font-size: 14px; font-weight: 600; min-height: 20px; margin-top: 8px; }
+  .logo { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin: 40px 0 6px; }
+  .logo span { color: var(--accent); }
+  .sub { color: var(--muted); margin: 0 0 32px; font-size: 15px; }
+  .days { display: flex; gap: 6px; padding: 0 20px 12px; flex: none; }
+  .day { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px 0; text-align: center; cursor: pointer; font: inherit; }
+  .day b { display: block; font-size: 16px; }
+  .day small { font-size: 11px; color: var(--muted); }
+  .day.sel { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .day.sel small { color: #c7ced6; }
+  .date-title { font-size: 14px; color: var(--muted); font-weight: 600; margin: 4px 0 10px; }
+  .item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; align-items: center; }
+  .item .time { font-weight: 800; font-size: 16px; width: 48px; flex: none; }
+  .item .info { flex: 1; min-width: 0; }
+  .item .info b { display: block; font-size: 15px; }
+  .item .info small { color: var(--muted); font-size: 13px; }
+  .pill { font-size: 13px; font-weight: 700; padding: 7px 10px; border-radius: 10px; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .pill.go { background: var(--accent-soft); color: var(--accent); }
+  .pill.full { background: var(--soft); color: #98a1ac; cursor: default; }
+  .pill.mine { background: transparent; color: var(--accent); cursor: default; }
+  .tabs { display: flex; border-top: 1px solid var(--line); flex: none; padding-bottom: 6px; }
+  .tab { flex: 1; padding: 10px 0 8px; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: 0; cursor: pointer; font-family: inherit; }
+  .tab i { display: block; font-style: normal; font-size: 20px; margin-bottom: 2px; }
+  .tab.on { color: var(--accent); }
+  .sheet-group h3 { font-size: 15px; margin: 18px 0 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 9px 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .foot { padding: 12px 20px 16px; display: flex; flex-direction: column; gap: 10px; flex: none; }
+  .hero-card { background: var(--soft); border-radius: 18px; padding: 20px; margin-bottom: 18px; }
+  .hero-card h3 { margin: 0 0 4px; font-size: 24px; }
+  .hero-card p { margin: 0; color: var(--muted); }
+  .rows div { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .rows div span:first-child { color: var(--muted); }
+  .rows div span:last-child { font-weight: 700; text-align: right; }
+  .done { text-align: center; padding-top: 70px; }
+  .done .mark { width: 76px; height: 76px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 38px; margin: 0 auto 20px; }
+  .done h3 { font-size: 24px; margin: 0 0 8px; }
+  .done p { color: var(--muted); margin: 0; line-height: 1.5; }
+  .bk { padding: 14px 0; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+  .bk .info { flex: 1; }
+  .bk b { display: block; }
+  .bk small { color: var(--muted); }
+  .del { background: none; border: 1px solid var(--line); color: var(--warn); font: inherit; font-size: 13px; font-weight: 700; padding: 7px 10px; border-radius: 10px; cursor: pointer; }
+  .empty-note { color: var(--muted); text-align: center; padding-top: 60px; }
+  .sub-card { border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+  .sub-card small { color: var(--muted); }
+  .big { font-size: 34px; font-weight: 800; margin: 6px 0 2px; }
+  .bar-track { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+  .bar-fill { height: 100%; background: var(--accent); width: 58%; }
+  .link-row { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-weight: 600; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; font: inherit; font-weight: 600; text-align: left; color: var(--ink); }
+  .stub { text-align: center; padding-top: 90px; color: var(--muted); }
+  .stub b { display: block; color: var(--ink); font-size: 18px; margin-bottom: 6px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 700px) {
+    body { padding: 0; gap: 0; display: block; background: var(--surface); }
+    .note { max-width: none; padding: 16px 20px; background: var(--soft); color: #33404f; }
+    .note .reset { color: #33404f; border-color: #9aa5b1; }
+    .phone { width: 100%; height: 100svh; border: 0; border-radius: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="note">
+  <h1>FitBook, прототип v0.3</h1>
+  Кликабельный прототип мобильного приложения для записи на групповые тренировки. Данные ненастоящие, изменения сохраняются только до обновления страницы.
+  <dl>
+    <dt>Вход</dt>
+    <dd>Любой номер телефона, код из SMS: <b>1234</b></dd>
+    <dt>Текущее время в прототипе</dt>
+    <dd>Четверг, 24 сентября, 17:20</dd>
+    <dt>Абонемент пользователя</dt>
+    <dd>12 занятий, действует до 31.10.2026</dd>
+  </dl>
+  <button class="reset" onclick="location.reload()">Начать заново</button>
+</aside>
+
+<div class="phone">
+  <div class="status"><span>17:20</span><span>●●● ▮</span></div>
+
+  <!-- 1. Вход -->
+  <section class="screen active" id="s-login">
+    <div class="content">
+      <div class="logo">Fit<span>Book</span></div>
+      <p class="sub">Запись на групповые тренировки клуба «Пульс»</p>
+      <label class="field" for="phone">Номер телефона</label>
+      <input class="inp" id="phone" placeholder="MSISDN">
+    </div>
+    <div class="foot">
+      <button class="btn" onclick="go('s-code')">Получить код</button>
+    </div>
+  </section>
+
+  <!-- 2. Код -->
+  <section class="screen" id="s-code">
+    <div class="content">
+      <div class="logo" style="font-size:24px">Введите код из SMS</div>
+      <p class="sub">Код отправлен на ваш номер</p>
+      <input class="inp" id="code" maxlength="4" inputmode="numeric" style="letter-spacing:12px;font-size:24px;text-align:center">
+      <div class="err" id="code-err"></div>
+    </div>
+    <div class="foot">
+      <button class="btn" onclick="checkCode()">Войти</button>
+    </div>
+  </section>
+
+  <!-- 3. Расписание -->
+  <section class="screen" id="s-schedule">
+    <header class="bar">
+      <h2>Расписание</h2>
+      <button class="text-btn" onclick="openFilter()">Фильтр</button>
+    </header>
+    <div class="days" id="days"></div>
+    <div class="content">
+      <div class="date-title" id="date-title"></div>
+      <div id="list"></div>
+    </div>
+    <nav class="tabs">
+      <button class="tab on" onclick="tab('s-schedule')"><i>▦</i>Расписание</button>
+      <button class="tab" onclick="tab('s-my')"><i>✓</i>Мои записи</button>
+      <button class="tab" onclick="tab('s-profile')"><i>◉</i>Профиль</button>
+    </nav>
+  </section>
+
+  <!-- 4. Фильтр -->
+  <section class="screen" id="s-filter">
+    <header class="bar">
+      <button class="icon-btn" onclick="go('s-schedule')" aria-label="Закрыть">✕</button>
+      <h2>Фильтр</h2>
+    </header>
+    <div class="content">
+      <div class="sheet-group">
+        <h3>Тип тренировки</h3>
+        <div class="chips" id="type-chips"></div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn" onclick="applyFilter()">Применить</button>
+      <button class="btn secondary" onclick="/* не реализовано */ void 0">Сбросить</button>
+    </div>
+  </section>
+
+  <!-- 5. Карточка тренировки -->
+  <section class="screen" id="s-card">
+    <header class="bar">
+      <button class="icon-btn" onclick="go('s-schedule')" aria-label="Назад">←</button>
+      <h2>Тренировка</h2>
+    </header>
+    <div class="content">
+      <div class="hero-card">
+        <h3 id="c-name"></h3>
+        <p id="c-date"></p>
+      </div>
+      <div class="rows">
+        <div><span>Время</span><span id="c-time"></span></div>
+        <div><span>Продолжительность</span><span id="c-dur"></span></div>
+        <div><span>Тренер</span><span id="c-trainer"></span></div>
+        <div><span>Свободных мест</span><span id="c-free"></span></div>
+      </div>
+      <p id="c-desc" style="color:var(--muted);line-height:1.5;font-size:14px"></p>
+    </div>
+    <div class="foot">
+      <button class="btn" id="c-btn" onclick="book(current)">Забронировать</button>
+    </div>
+  </section>
+
+  <!-- 6. Успешная запись -->
+  <section class="screen" id="s-done">
+    <div class="content">
+      <div class="done">
+        <div class="mark">✓</div>
+        <h3>Вы записаны!</h3>
+        <p id="done-text"></p>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn" onclick="go('s-schedule')">К расписанию</button>
+    </div>
+  </section>
+
+  <!-- 7. Мои записи -->
+  <section class="screen" id="s-my">
+    <header class="bar"><h2>Мои записи</h2></header>
+    <div class="content" id="my-list"></div>
+    <nav class="tabs">
+      <button class="tab" onclick="tab('s-schedule')"><i>▦</i>Расписание</button>
+      <button class="tab on" onclick="tab('s-my')"><i>✓</i>Мои записи</button>
+      <button class="tab" onclick="tab('s-profile')"><i>◉</i>Профиль</button>
+    </nav>
+  </section>
+
+  <!-- 8. Профиль -->
+  <section class="screen" id="s-profile">
+    <header class="bar"><h2>Профиль</h2></header>
+    <div class="content">
+      <div class="sub-card">
+        <small>Абонемент «12 занятий»</small>
+        <div class="big">Осталось 7 из 12</div>
+        <small>Действует до 31 октября 2026</small>
+        <div class="bar-track"><div class="bar-fill"></div></div>
+      </div>
+      <div class="rows" style="margin-bottom:8px">
+        <div><span>Имя</span><span>Алексей Смирнов</span></div>
+        <div><span>Телефон</span><span id="p-phone">+7 900 000-00-00</span></div>
+      </div>
+      <button class="link-row" onclick="go('s-history')"><span>История посещений</span><span>›</span></button>
+      <button class="link-row" onclick="location.reload()"><span>Выйти</span><span>›</span></button>
+    </div>
+    <nav class="tabs">
+      <button class="tab" onclick="tab('s-schedule')"><i>▦</i>Расписание</button>
+      <button class="tab" onclick="tab('s-my')"><i>✓</i>Мои записи</button>
+      <button class="tab on" onclick="tab('s-profile')"><i>◉</i>Профиль</button>
+    </nav>
+  </section>
+
+  <!-- 9. История (заглушка) -->
+  <section class="screen" id="s-history">
+    <header class="bar">
+      <button class="icon-btn" onclick="go('s-profile')" aria-label="Назад">←</button>
+      <h2>История</h2>
+    </header>
+    <div class="content">
+      <div class="stub"><b>Раздел в разработке</b>Скоро здесь появится история ваших посещений</div>
+    </div>
+  </section>
+</div>
+
+<script>
+  const DAYS = [
+    { d: 'Пн', n: 21, full: 'Понедельник, 21 сентября', iso: '2026-09-21' },
+    { d: 'Вт', n: 22, full: 'Вторник, 22 сентября', iso: '2026-09-22' },
+    { d: 'Ср', n: 23, full: 'Среда, 23 сентября', iso: '2026-09-23' },
+    { d: 'Чт', n: 24, full: 'Четверг, 24 сентября', iso: '2026-09-24' },
+    { d: 'Пт', n: 25, full: 'Пятница, 25 сентября', iso: '2026-09-25' },
+    { d: 'Сб', n: 26, full: 'Суббота, 26 сентября', iso: '2026-09-26' },
+    { d: 'Вс', n: 27, full: 'Воскресенье, 27 сентября', iso: '2026-09-27' }
+  ];
+  const DESC = {
+    'Йога': 'Хатха-йога для любого уровня подготовки. Коврики выдаются в клубе.',
+    'Пилатес': 'Укрепление мышц кора и работа над осанкой.',
+    'Стретчинг': 'Мягкая растяжка всех групп мышц.',
+    'Функциональный тренинг': 'Интервальная тренировка с собственным весом и гантелями.',
+    'Сайкл': 'Кардиотренировка на велотренажёрах под музыку.'
+  };
+  // hall хранится в данных, но на экране не выводится
+  const T = [
+    { id: 1, day: 0, time: '08:00', name: 'Йога', trainer: 'Анна Ковалёва', hall: 'Зал 2', free: 4, total: 15, dur: '60 мин' },
+    { id: 2, day: 0, time: '19:00', name: 'Функциональный тренинг', trainer: 'Дмитрий Воронов', hall: 'Зал 1', free: 11, total: 20, dur: '55 мин' },
+    { id: 3, day: 1, time: '18:30', name: 'Пилатес', trainer: 'Мария Соколова', hall: 'Зал 2', free: 2, total: 10, dur: '50 мин' },
+    { id: 4, day: 1, time: '20:00', name: 'Сайкл', trainer: 'Игорь Лебедев', hall: 'Сайкл-студия', free: 7, total: 12, dur: '45 мин' },
+    { id: 5, day: 2, time: '09:00', name: 'Стретчинг', trainer: 'Ольга Никитина', hall: 'Зал 2', free: 9, total: 15, dur: '60 мин' },
+    { id: 6, day: 2, time: '19:30', name: 'Йога', trainer: 'Анна Ковалёва', hall: 'Зал 2', free: 1, total: 15, dur: '60 мин' },
+    { id: 7, day: 3, time: '18:00', name: 'Стретчинг', trainer: 'Ольга Никитина', hall: 'Зал 2', free: 6, total: 15, dur: '60 мин' },
+    { id: 8, day: 3, time: '19:00', name: 'Йога', trainer: 'Анна Ковалёва', hall: 'Зал 2', free: 5, total: 15, dur: '60 мин' },
+    { id: 9, day: 3, time: '19:30', name: 'Пилатес', trainer: 'Мария Соколова', hall: 'Зал 3', free: 0, total: 10, dur: '50 мин' },
+    { id: 10, day: 3, time: '20:00', name: 'Функциональный тренинг', trainer: 'Дмитрий Воронов', hall: 'Зал 1', free: 12, total: 20, dur: '55 мин' },
+    { id: 11, day: 4, time: '18:30', name: 'Сайкл', trainer: 'Игорь Лебедев', hall: 'Сайкл-студия', free: 3, total: 12, dur: '45 мин' },
+    { id: 12, day: 4, time: '19:00', name: 'Йога', trainer: 'Анна Ковалёва', hall: 'Зал 2', free: 6, total: 15, dur: '60 мин' },
+    { id: 13, day: 4, time: '19:00', name: 'Пилатес', trainer: 'Мария Соколова', hall: 'Зал 3', free: 0, total: 10, dur: '50 мин' },
+    { id: 14, day: 4, time: '20:15', name: 'Функциональный тренинг', trainer: 'Дмитрий Воронов', hall: 'Зал 1', free: 8, total: 20, dur: '55 мин' },
+    { id: 15, day: 5, time: '10:00', name: 'Йога', trainer: 'Анна Ковалёва', hall: 'Зал 2', free: 10, total: 15, dur: '60 мин' },
+    { id: 16, day: 5, time: '11:30', name: 'Пилатес', trainer: 'Мария Соколова', hall: 'Зал 3', free: 4, total: 10, dur: '50 мин' },
+    { id: 17, day: 5, time: '12:00', name: 'Сайкл', trainer: 'Игорь Лебедев', hall: 'Сайкл-студия', free: 0, total: 12, dur: '45 мин' }
+    // воскресенье: тренировок нет
+  ];
+  const TYPES = ['Йога', 'Пилатес', 'Стретчинг', 'Функциональный тренинг', 'Сайкл'];
+
+  let selDay = 3;
+  let booked = [7];           // уже записан на стретчинг в четверг 18:00
+  let filterTypes = [];       // применённый фильтр
+  let draftTypes = [];        // выбор на экране фильтра
+  let current = null;
+
+  function go(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 's-schedule') renderSchedule();
+    if (id === 's-my') renderMy();
+  }
+  function tab(id) { go(id); }
+
+  function checkCode() {
+    const v = document.getElementById('code').value.trim();
+    const err = document.getElementById('code-err');
+    if (v === '1234') {
+      err.textContent = '';
+      const ph = document.getElementById('phone').value.trim();
+      if (ph) document.getElementById('p-phone').textContent = ph;
+      go('s-schedule');
+    } else {
+      err.textContent = 'Ошибка';
+    }
+  }
+
+  function renderDays() {
+    const box = document.getElementById('days');
+    box.innerHTML = '';
+    DAYS.forEach((d, i) => {
+      const b = document.createElement('button');
+      b.className = 'day' + (i === selDay ? ' sel' : '');
+      b.innerHTML = `<small>${d.d}</small><b>${d.n}</b>`;
+      b.onclick = () => { selDay = i; renderSchedule(); };
+      box.appendChild(b);
+    });
+  }
+
+  function renderSchedule() {
+    renderDays();
+    const list = document.getElementById('list');
+    const title = document.getElementById('date-title');
+    let items = T.filter(t => t.day === selDay);
+    if (filterTypes.length) items = items.filter(t => filterTypes.includes(t.name));
+    list.innerHTML = '';
+    if (!items.length) { title.textContent = ''; return; }
+    title.textContent = DAYS[selDay].full;
+    items.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'item';
+      let action;
+      if (booked.includes(t.id)) action = '<span class="pill mine">Вы записаны</span>';
+      else if (t.free === 0) action = '<span class="pill full">Мест нет</span>';
+      else action = `<button class="pill go" data-id="${t.id}">Записаться</button>`;
+      row.innerHTML = `<div class="time">${t.time}</div>
+        <div class="info"><b>${t.name}</b><small>${t.trainer} · свободно ${t.free}</small></div>${action}`;
+      row.onclick = (e) => {
+        if (e.target.dataset && e.target.dataset.id) { e.stopPropagation(); book(t); }
+        else openCard(t);
+      };
+      list.appendChild(row);
+    });
+  }
+
+  function openCard(t) {
+    current = t;
+    document.getElementById('c-name').textContent = t.name;
+    document.getElementById('c-date').textContent = DAYS[t.day].full;
+    document.getElementById('c-time').textContent = t.time;
+    document.getElementById('c-dur').textContent = t.dur;
+    document.getElementById('c-trainer').textContent = t.trainer;
+    document.getElementById('c-free').textContent = `${t.free} из ${t.total}`;
+    document.getElementById('c-desc').textContent = DESC[t.name];
+    const btn = document.getElementById('c-btn');
+    if (booked.includes(t.id)) { btn.disabled = true; btn.textContent = 'Вы записаны'; }
+    else if (t.free === 0) { btn.disabled = true; btn.textContent = 'Мест нет'; }
+    else { btn.disabled = false; btn.textContent = 'Забронировать'; }
+    go('s-card');
+  }
+
+  function book(t) {
+    if (!t || t.free === 0 || booked.includes(t.id)) return;
+    booked.push(t.id);
+    // количество свободных мест намеренно не уменьшается
+    document.getElementById('done-text').textContent =
+      `${t.name}, ${DAYS[t.day].full.toLowerCase()}, ${t.time}. Тренер: ${t.trainer}.`;
+    go('s-done');
+  }
+
+  function openFilter() {
+    draftTypes = [...filterTypes];
+    const box = document.getElementById('type-chips');
+    box.innerHTML = '';
+    TYPES.forEach(tp => {
+      const c = document.createElement('button');
+      c.className = 'chip' + (draftTypes.includes(tp) ? ' on' : '');
+      c.textContent = tp;
+      c.onclick = () => {
+        if (draftTypes.includes(tp)) draftTypes = draftTypes.filter(x => x !== tp);
+        else draftTypes.push(tp);
+        c.classList.toggle('on');
+      };
+      box.appendChild(c);
+    });
+    go('s-filter');
+  }
+  function applyFilter() { filterTypes = [...draftTypes]; go('s-schedule'); }
+
+  function renderMy() {
+    const box = document.getElementById('my-list');
+    box.innerHTML = '';
+    const items = T.filter(t => booked.includes(t.id))
+      .sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
+    if (!items.length) {
+      box.innerHTML = '<div class="empty-note">Вы пока никуда не записаны</div>';
+      return;
+    }
+    items.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'bk';
+      row.innerHTML = `<div class="info"><b>${t.name}</b><small>${DAYS[t.day].iso} ${t.time} · ${t.trainer}</small></div>
+        <button class="del">Удалить</button>`;
+      row.querySelector('.del').onclick = () => {
+        booked = booked.filter(x => x !== t.id);
+        renderMy();
+      };
+      box.appendChild(row);
+    });
+  }
+</script>
+</body>
+</html>
